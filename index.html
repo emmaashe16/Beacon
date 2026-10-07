@@ -1,0 +1,686 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0f1720"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Beacon Survival Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-screen field tool — panel content scrolls, tab bar fixed at the bottom like gear on a belt. Deliberately dark-only for night use and battery. */
+:root{
+  --ground:#0f1720;      /* deep night slate */
+  --panel:#18232f;       /* raised surface */
+  --line:#2a3949;        /* hairline */
+  --ink:#e8eef2;         /* primary text */
+  --muted:#93a4b3;       /* secondary text */
+  --signal:#ff6b1a;      /* international rescue orange */
+  --signal-ink:#1a0d04;  /* text on orange */
+  --tape:#f4e04d;        /* reflective tape yellow */
+  --ok:#5fd39a;
+  --danger:#ff4d4d;
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button,input,textarea{font:inherit;color:inherit}
+.app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.brand span{color:var(--signal)}
+.morse{font-family:var(--mono);font-size:13px;color:var(--tape);letter-spacing:.15em}
+main{flex:1;overflow-y:auto;padding:16px 16px 24px}
+section[data-tab]{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1.05;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--muted)}
+p{margin:0}
+.hint{color:var(--muted);font-size:13.5px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:transparent;border-radius:8px;padding:11px 14px;font-weight:600;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--tape);outline-offset:2px}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
+.btn.tape{background:var(--tape);border-color:var(--tape);color:#1b1800}
+.btn.block{width:100%}
+.btn.small{min-height:36px;padding:6px 10px;font-size:13.5px}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+input,textarea{width:100%;background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:120px;resize:vertical;line-height:1.45}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px}
+.coords{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums;color:var(--tape);word-break:break-all}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,transparent)}
+.pill.warn{color:var(--tape);border-color:color-mix(in srgb,var(--tape) 50%,transparent)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.contact{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.contact:first-child{border-top:0}
+.contact .who{flex:1;min-width:0}
+.contact .who b{display:block}
+.contact .who span{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:8px;padding:14px;color:var(--muted);font-size:14px}
+.numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.num{border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
+.num b{display:block;font-family:var(--display);font-size:30px;line-height:1;color:var(--signal)}
+.num span{font-size:12px;color:var(--muted)}
+.big-switch{aspect-ratio:1;width:min(64vw,240px);max-width:100%;margin:6px auto;border-radius:50%;border:3px solid var(--line);background:radial-gradient(circle at 50% 40%,#22303e,var(--panel));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.big-switch small{font-family:var(--body);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none}
+.big-switch.on{border-color:var(--tape);color:#1b1800;background:radial-gradient(circle at 50% 40%,#fffbe0,var(--tape));box-shadow:0 0 60px color-mix(in srgb,var(--tape) 45%,transparent)}
+.big-switch.alarm.on{border-color:var(--danger);background:radial-gradient(circle at 50% 40%,#ff8a8a,var(--danger));color:#2a0000;box-shadow:0 0 60px color-mix(in srgb,var(--danger) 45%,transparent)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.shot{border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.shot img{width:100%;aspect-ratio:1;object-fit:cover;display:block;max-width:100%}
+.shot .meta{padding:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+summary{cursor:pointer;padding:14px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.03em;text-transform:uppercase;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--signal);font-size:26px;line-height:1}
+details[open] summary::after{content:"–"}
+details .content{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+details ol,details ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.callout{border-left:3px solid var(--signal);padding-left:10px;font-size:14px}
+nav.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab{appearance:none;border:0;background:transparent;padding:9px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);cursor:pointer;min-height:56px}
+.tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--signal)}
+.tab.sos[aria-selected="true"]{color:var(--signal)}
+#screenLight{position:fixed;inset:0;background:#fff;z-index:50;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px));color:#999;font-size:14px;cursor:pointer}
+#screenLight.off{background:#000}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:60;max-width:calc(100% - 32px)}
+.beat{width:70px;height:70px;border-radius:50%;background:var(--danger);opacity:.25;transition:opacity .08s, transform .08s}
+.beat.hit{opacity:1;transform:scale(1.08)}
+@media (prefers-reduced-motion: reduce){.beat{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand">Bea<span>con</span></div>
+    <div class="morse" aria-label="SOS in Morse code">··· ––– ···</div>
+  </header>
+
+  <main id="main">
+    <!-- SOS -->
+    <section data-tab="sos">
+      <div class="row" style="justify-content:space-between">
+        <h2>Send an SOS</h2>
+        <span class="pill" id="gpsPill"><span class="dot"></span>No fix</span>
+      </div>
+
+      <div class="numbers" aria-label="Emergency numbers">
+        <div class="num"><b>112</b><span>EU &amp; any mobile</span></div>
+        <div class="num"><b>999</b><span>Ireland &amp; UK</span></div>
+        <div class="num"><b>911</b><span>US &amp; Canada</span></div>
+      </div>
+      <a class="btn primary block" href="tel:112" id="call112">Call 112</a>
+
+      <div class="box">
+        <h3>Your location</h3>
+        <div class="coords" id="coords">Not located yet</div>
+        <div class="hint" id="coordsSub">Tap below to get a GPS fix. It goes into your message automatically.</div>
+        <button class="btn tape" id="locateBtn">Get my location</button>
+        <div id="locAsk" hidden class="box" style="border-color:var(--tape)">
+          <p><b>Allow Beacon to use your location?</b></p>
+          <p class="hint">Your phone will ask next. Beacon checks your location only when you tap “Get my location”, adds it to your SOS message, and never sends it anywhere by itself.</p>
+          <div class="row">
+            <button class="btn tape" id="locAllow" style="flex:1">Continue</button>
+            <button class="btn" id="locSkip" style="flex:1">Not now</button>
+          </div>
+        </div>
+        <div id="locDenied" hidden class="box" style="border-color:var(--danger)">
+          <p><b>Location is turned off for Beacon</b></p>
+          <ol class="hint" style="margin:0;padding-left:18px">
+            <li>Open <b>Settings</b> › <b>Privacy &amp; Security</b> › <b>Location Services</b> and turn it on.</li>
+            <li>In the same list, tap <b>Safari Websites</b> and choose <b>While Using the App</b>.</li>
+            <li>Come back and tap “Get my location” again.</li>
+          </ol>
+          <p class="hint">Inside the Claude app preview, location is always blocked. Open Beacon as its own website to use GPS.</p>
+        </div>
+        <label for="placeNote">Describe where you are
+          <input id="placeNote" placeholder="e.g. Wicklow Way, past the second bridge, north side">
+        </label>
+      </div>
+
+      <div class="box">
+        <div class="row" style="justify-content:space-between"><h3>Emergency contacts</h3><button class="btn small" id="addToggle">Add</button></div>
+        <div id="addForm" hidden class="box" style="padding:10px">
+          <div class="row">
+            <label for="cName">Name<input id="cName" autocomplete="off"></label>
+            <label for="cPhone">Phone<input id="cPhone" type="tel" placeholder="+353 86 123 4567"></label>
+          </div>
+          <button class="btn primary" id="saveContact">Save contact</button>
+        </div>
+        <div id="contacts"></div>
+      </div>
+
+      <div class="box">
+        <h3>Message</h3>
+        <textarea id="msg" aria-label="SOS message"></textarea>
+        <div class="row">
+          <button class="btn primary" id="copyMsg" style="flex:1">Copy message</button>
+          <button class="btn" id="resetMsg">Rebuild</button>
+        </div>
+        <p class="hint">Tapping a contact's “Text” button opens Messages with this filled in. Press send there, then check it went through. If it doesn't open, copy the message and paste it.</p>
+      </div>
+
+      <div class="box">
+        <h3>Medical info</h3>
+        <div class="row">
+          <label for="mName">Your name<input id="mName"></label>
+          <label for="mBlood">Blood type<input id="mBlood" placeholder="e.g. O+"></label>
+        </div>
+        <label for="mAllergy">Allergies<input id="mAllergy" placeholder="e.g. penicillin"></label>
+        <label for="mMeds">Medications &amp; conditions<input id="mMeds" placeholder="e.g. asthma, salbutamol inhaler"></label>
+        <p class="hint">Saved on this device only and added to your SOS message.</p>
+      </div>
+
+      <div class="box" id="privacyBox">
+        <h3>Your data</h3>
+        <ul class="hint" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+          <li>Contacts, medical info and your location note are stored only on this phone.</li>
+          <li>Nothing is sent anywhere unless you send the SOS message yourself.</li>
+          <li>Your location is checked only when you tap “Get my location”.</li>
+          <li>Photos are never uploaded and disappear when you close the app.</li>
+        </ul>
+        <button class="btn block" id="wipeBtn" style="border-color:var(--danger);color:var(--danger)">Delete all my data</button>
+        <div id="wipeConfirm" hidden class="box" style="border-color:var(--danger)">
+          <p>This permanently removes your contacts, medical info, location and photos from this phone.</p>
+          <div class="row">
+            <button class="btn" id="wipeYes" style="flex:1;background:var(--danger);border-color:var(--danger);color:#2a0000">Delete everything</button>
+            <button class="btn" id="wipeNo" style="flex:1">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIGHT -->
+    <section data-tab="light" hidden>
+      <h2>Light</h2>
+      <button class="big-switch" id="lightBtn" aria-pressed="false">Off<small>Tap to turn on</small></button>
+      <div class="seg" role="group" aria-label="Light mode">
+        <button class="btn" data-mode="steady" aria-pressed="true">Steady</button>
+        <button class="btn" data-mode="strobe" aria-pressed="false">Strobe</button>
+        <button class="btn" data-mode="sos" aria-pressed="false">SOS</button>
+      </div>
+      <div class="box">
+        <span class="pill" id="lightSource"><span class="dot"></span>Source: checking</span>
+        <p class="hint">Uses the phone's flashlight where the browser allows it. Otherwise the whole screen turns white, at full brightness. Tap the screen to switch it off.</p>
+        <p class="hint"><b style="color:var(--ink)">SOS mode</b> flashes ··· ––– ··· : three short, three long, three short. Rescuers recognise it from the air and across water.</p>
+      </div>
+    </section>
+
+    <!-- CAMERA -->
+    <section data-tab="camera" hidden>
+      <h2>Camera</h2>
+      <label class="btn primary block" for="camInput" style="flex-direction:row;color:var(--signal-ink);font-size:15px">Take a photo
+        <input id="camInput" type="file" accept="image/*" capture="environment" hidden>
+      </label>
+      <p class="hint">Photograph injuries, landmarks, trail signs or damage. Each photo gets a time and location stamp you can save.</p>
+      <div class="gallery" id="gallery"></div>
+      <div class="empty" id="galleryEmpty">No photos yet. Photos stay on this screen until you close the app, so save the ones you need.</div>
+    </section>
+
+    <!-- ALARM -->
+    <section data-tab="alarm" hidden>
+      <h2>Alarm</h2>
+      <button class="big-switch alarm" id="alarmBtn" aria-pressed="false">Off<small>Tap to sound</small></button>
+      <div class="seg" role="group" aria-label="Alarm sound">
+        <button class="btn" data-sound="whistle" aria-pressed="true">Whistle</button>
+        <button class="btn" data-sound="siren" aria-pressed="false">Siren</button>
+        <button class="btn" data-sound="beep" aria-pressed="false">Beacon</button>
+      </div>
+      <div class="box">
+        <p class="hint"><b style="color:var(--ink)">Whistle</b> plays the international distress signal: six blasts a minute. Three blasts is also widely understood as “help”.</p>
+        <p class="hint">Turn off silent mode and turn the volume up. Sound carries further than shouting and saves your voice.</p>
+      </div>
+    </section>
+
+    <!-- GUIDE -->
+    <section data-tab="guide" hidden>
+      <h2>Field guide</h2>
+      <p class="hint">Basic first aid and survival steps. Call for help first whenever you can.</p>
+
+      <details>
+        <summary>CPR (adult)</summary>
+        <div class="content">
+          <ol>
+            <li>Check for danger, then response. Shout and tap the shoulders.</li>
+            <li>No normal breathing? Call 112 and put the phone on speaker.</li>
+            <li>Heel of hand on the centre of the chest, other hand on top.</li>
+            <li>Push hard and fast: 5–6 cm deep, 100–120 a minute.</li>
+            <li>If trained: 30 compressions, then 2 rescue breaths. If not, keep compressing.</li>
+            <li>Use a defibrillator (AED) as soon as one arrives.</li>
+          </ol>
+          <div class="box" style="align-items:center">
+            <div class="beat" id="beat" aria-hidden="true"></div>
+            <button class="btn tape" id="metroBtn" aria-pressed="false">Start 110 bpm pacer</button>
+            <span class="hint">Push on every beat.</span>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Severe bleeding</summary>
+        <div class="content"><ol>
+          <li>Press hard on the wound with a cloth or your hand.</li>
+          <li>Keep pressure on for at least 10 minutes. Don't lift to check.</li>
+          <li>If blood soaks through, add more cloth on top.</li>
+          <li>Limb wound still bleeding heavily? Apply a tourniquet 5–7 cm above it and note the time.</li>
+          <li>Keep them warm and lying down.</li>
+        </ol></div>
+      </details>
+
+      <details>
+        <summary>Choking</summary>
+        <div class="content"><ol>
+          <li>Ask them to cough.</li>
+          <li>Up to 5 sharp back blows between the shoulder blades.</li>
+          <li>Up to 5 abdominal thrusts: fist above the navel, pull in and up.</li>
+          <li>Repeat back blows and thrusts. If they go unresponsive, call 112 and start CPR.</li>
+        </ol></div>
+      </details>
+
+      <details>
+        <summary>Hypothermia</summary>
+        <div class="content">
+          <p class="callout">Signs: shivering, slurred speech, clumsiness, confusion. Shivering stopping is a bad sign.</p>
+          <ul>
+            <li>Get out of wind and wet. Insulate from the ground.</li>
+            <li>Swap wet clothes for dry. Cover the head.</li>
+            <li>Warm the core first: chest, armpits, groin.</li>
+            <li>Warm sweet drinks if they can swallow. No alcohol.</li>
+            <li>Handle gently. Don't rub limbs.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Burns</summary>
+        <div class="content"><ul>
+          <li>Cool under cool running water for 20 minutes.</li>
+          <li>Remove rings and watches before swelling starts.</li>
+          <li>Cover loosely with cling film or a clean plastic bag.</li>
+          <li>No ice, butter or creams.</li>
+        </ul></div>
+      </details>
+
+      <details>
+        <summary>Fractures &amp; sprains</summary>
+        <div class="content"><ul>
+          <li>Don't try to straighten it. Support it in the position found.</li>
+          <li>Splint with a stick, rolled jacket or trekking pole, padded.</li>
+          <li>Check fingers or toes stay warm and pink after tying.</li>
+        </ul></div>
+      </details>
+
+      <details>
+        <summary>Rule of threes</summary>
+        <div class="content">
+          <p>Roughly how long a person survives without:</p>
+          <ul>
+            <li><b>3 minutes</b> without air</li>
+            <li><b>3 hours</b> without shelter in harsh weather</li>
+            <li><b>3 days</b> without water</li>
+            <li><b>3 weeks</b> without food</li>
+          </ul>
+          <p class="hint">Prioritise in that order: breathing, shelter and warmth, water, then food.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Signalling for rescue</summary>
+        <div class="content"><ul>
+          <li>Groups of three mean distress: three fires, three whistle blasts, three flashes.</li>
+          <li>Ground-to-air: a large <b>V</b> means “need help”, an <b>X</b> means “need medical help”. Make lines 3 m long or more.</li>
+          <li>Bright colours against the background: spread orange or red gear in the open.</li>
+          <li>To a helicopter, both arms raised in a Y means “yes, we need help”.</li>
+        </ul></div>
+      </details>
+
+      <details>
+        <summary>Water</summary>
+        <div class="content"><ul>
+          <li>Prefer flowing water from upstream of people and animals.</li>
+          <li>Boil for 1 minute (3 minutes above 2,000 m).</li>
+          <li>Filter through cloth first if it's murky.</li>
+        </ul></div>
+      </details>
+
+      <details>
+        <summary>Lost? STOP</summary>
+        <div class="content"><ul>
+          <li><b>Stop.</b> Stay put. Walking usually makes it worse.</li>
+          <li><b>Think.</b> When did you last know where you were?</li>
+          <li><b>Observe.</b> Landmarks, weather, daylight left, your supplies.</li>
+          <li><b>Plan.</b> Shelter early, signal, and conserve phone battery.</li>
+        </ul></div>
+      </details>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab sos" role="tab" data-go="sos" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>SOS</button>
+    <button class="tab" role="tab" data-go="light" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M8 3h8l-1 6H9z"/><path d="M9 9v10a3 3 0 006 0V9"/><path d="M12 13v2"/></svg>Light</button>
+    <button class="tab" role="tab" data-go="camera" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Camera</button>
+    <button class="tab" role="tab" data-go="alarm" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Alarm</button>
+    <button class="tab" role="tab" data-go="guide" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/><path d="M12 7v6M9 10h6"/></svg>Guide</button>
+  </nav>
+</div>
+
+<div id="screenLight" hidden>Tap to turn off</div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const store = {
+    get(k, d){ try{ const v = localStorage.getItem('beacon.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+    set(k, v){ try{ localStorage.setItem('beacon.'+k, JSON.stringify(v)); }catch(e){} }
+  };
+  let toastTimer;
+  function toast(t){
+    let el = $('.toast'); if(!el){ el = document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); document.body.appendChild(el); }
+    el.textContent = t; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ el.hidden = true; }, 2600);
+  }
+
+  /* ---------- tabs ---------- */
+  $$('.tab').forEach(b => b.addEventListener('click', () => {
+    $$('.tab').forEach(t => t.setAttribute('aria-selected', t === b ? 'true':'false'));
+    $$('section[data-tab]').forEach(s => s.hidden = s.dataset.tab !== b.dataset.go);
+    $('#main').scrollTop = 0;
+  }));
+
+  /* ---------- location ---------- */
+  let pos = null;
+  function dms(v, pos_, neg){
+    const h = v >= 0 ? pos_ : neg; v = Math.abs(v);
+    const d = Math.floor(v), m = Math.floor((v-d)*60), s = ((v-d-m/60)*3600).toFixed(1);
+    return `${d}°${String(m).padStart(2,'0')}′${String(s).padStart(4,'0')}″${h}`;
+  }
+  function renderPos(){
+    const pill = $('#gpsPill');
+    if(!pos){ return; }
+    const lat = pos.lat.toFixed(5), lon = pos.lon.toFixed(5);
+    $('#coords').textContent = `${lat}, ${lon}`;
+    $('#coordsSub').textContent = `${dms(pos.lat,'N','S')}  ${dms(pos.lon,'E','W')} · ±${Math.round(pos.acc)} m · ${new Date(pos.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+    pill.className = 'pill ok'; pill.innerHTML = '<span class="dot"></span>GPS fix';
+  }
+  async function permState(){
+    try{ if(navigator.permissions){ const r = await navigator.permissions.query({name:'geolocation'}); return r.state; } }catch(e){}
+    return store.get('locAllowed', false) ? 'granted' : 'prompt';
+  }
+  async function requestLocation(){
+    $('#locDenied').hidden = true;
+    if(!('geolocation' in navigator)){ noGps(); return; }
+    const st = await permState();
+    if(st === 'granted'){ locate(); return; }
+    if(st === 'denied'){ showDenied(); return; }
+    $('#locAsk').hidden = false; $('#locAllow').focus();
+  }
+  function showDenied(){
+    const pill = $('#gpsPill');
+    pill.className='pill warn'; pill.innerHTML='<span class="dot"></span>Location off';
+    if(!pos) $('#coords').textContent = 'Location not allowed';
+    $('#coordsSub').textContent = 'Type a description of where you are below so it still goes in your message.';
+    $('#locDenied').hidden = false;
+  }
+  $('#locAllow').addEventListener('click', () => { $('#locAsk').hidden = true; locate(); });
+  $('#locSkip').addEventListener('click', () => { $('#locAsk').hidden = true; $('#placeNote').focus(); });
+  function locate(){
+    const pill = $('#gpsPill');
+    if(!('geolocation' in navigator)){ noGps(); return; }
+    pill.className='pill warn'; pill.innerHTML='<span class="dot"></span>Locating';
+    $('#coords').textContent = 'Locating…';
+    navigator.geolocation.getCurrentPosition(p => {
+      pos = {lat:p.coords.latitude, lon:p.coords.longitude, acc:p.coords.accuracy, t:Date.now()};
+      store.set('locAllowed', true); $('#locDenied').hidden = true;
+      renderPos(); buildMsg(); toast('Location added to message');
+    }, err => {
+      if(err && err.code === 1){ store.set('locAllowed', false); showDenied(); }
+      else noGps();
+    }, {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+  }
+  function noGps(){
+    const pill = $('#gpsPill');
+    pill.className='pill warn'; pill.innerHTML='<span class="dot"></span>No GPS';
+    $('#coords').textContent = pos ? $('#coords').textContent : 'Location unavailable here';
+    $('#coordsSub').textContent = 'GPS was blocked or timed out. Type a description below, or open Apple Maps, tap the blue dot and copy your coordinates into it.';
+    $('#placeNote').focus();
+  }
+  $('#locateBtn').addEventListener('click', requestLocation);
+
+  /* ---------- medical ---------- */
+  const med = store.get('med', {});
+  ['mName','mBlood','mAllergy','mMeds'].forEach(id => {
+    const el = $('#'+id); el.value = med[id] || '';
+    el.addEventListener('input', () => { med[id] = el.value.trim(); store.set('med', med); buildMsg(); });
+  });
+  $('#placeNote').value = store.get('place', '');
+  $('#placeNote').addEventListener('input', e => { store.set('place', e.target.value); buildMsg(); });
+
+  /* ---------- message ---------- */
+  let msgEdited = false;
+  function buildMsg(force){
+    if(msgEdited && !force) return;
+    const lines = ['SOS. I need help.'];
+    if(med.mName) lines[0] = `SOS. This is ${med.mName}. I need help.`;
+    if(pos){
+      lines.push(`My location: ${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)} (±${Math.round(pos.acc)} m)`);
+      lines.push(`Map: https://maps.google.com/?q=${pos.lat.toFixed(5)},${pos.lon.toFixed(5)}`);
+    }
+    const note = $('#placeNote').value.trim();
+    if(note) lines.push(`Where: ${note}`);
+    const m = [];
+    if(med.mBlood) m.push(`blood ${med.mBlood}`);
+    if(med.mAllergy) m.push(`allergies: ${med.mAllergy}`);
+    if(med.mMeds) m.push(med.mMeds);
+    if(m.length) lines.push(`Medical: ${m.join('; ')}`);
+    lines.push(`Sent ${new Date().toLocaleString([], {weekday:'short', hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'})}`);
+    lines.push('If you can\'t reach me, call 112 and give them this location.');
+    $('#msg').value = lines.join('\n');
+    renderContacts();
+  }
+  $('#msg').addEventListener('input', () => { msgEdited = true; renderContacts(); });
+  $('#resetMsg').addEventListener('click', () => { msgEdited = false; buildMsg(true); toast('Message rebuilt'); });
+  async function copyText(t){
+    try{ await navigator.clipboard.writeText(t); toast('Copied. Paste it into Messages or WhatsApp.'); }
+    catch(e){ const ta = $('#msg'); ta.focus(); ta.select(); toast('Selected. Use Copy from the menu.'); }
+  }
+  $('#copyMsg').addEventListener('click', () => copyText($('#msg').value));
+
+  /* ---------- contacts ---------- */
+  let contacts = store.get('contacts', []);
+  function smsHref(phone){
+    const n = phone.replace(/[^\d+]/g,'');
+    return `sms:${n}&body=${encodeURIComponent($('#msg').value)}`;
+  }
+  function renderContacts(){
+    const box = $('#contacts'); box.innerHTML = '';
+    if(!contacts.length){
+      const e = document.createElement('div'); e.className = 'empty';
+      e.textContent = 'Add the people who should get your SOS: a partner, family member or someone who knows your route.';
+      box.appendChild(e); return;
+    }
+    contacts.forEach((c, i) => {
+      const row = document.createElement('div'); row.className = 'contact';
+      const who = document.createElement('div'); who.className = 'who';
+      const b = document.createElement('b'); b.textContent = c.name;
+      const s = document.createElement('span'); s.textContent = c.phone;
+      who.append(b, s);
+      const txt = document.createElement('a'); txt.className = 'btn primary small'; txt.textContent = 'Text'; txt.href = smsHref(c.phone);
+      const call = document.createElement('a'); call.className = 'btn small'; call.textContent = 'Call'; call.href = 'tel:' + c.phone.replace(/[^\d+]/g,'');
+      const del = document.createElement('button'); del.className = 'btn small'; del.textContent = '✕'; del.setAttribute('aria-label', 'Remove ' + c.name);
+      del.addEventListener('click', () => {
+        if(del.dataset.armed){ contacts.splice(i,1); store.set('contacts', contacts); renderContacts(); }
+        else { del.dataset.armed = '1'; del.textContent = 'Remove?'; setTimeout(()=>{ if(del.isConnected){ delete del.dataset.armed; del.textContent='✕'; } }, 3000); }
+      });
+      row.append(who, txt, call, del); box.appendChild(row);
+    });
+  }
+  $('#addToggle').addEventListener('click', () => { const f = $('#addForm'); f.hidden = !f.hidden; if(!f.hidden) $('#cName').focus(); });
+  $('#saveContact').addEventListener('click', () => {
+    const name = $('#cName').value.trim(), phone = $('#cPhone').value.trim();
+    if(!name || phone.replace(/\D/g,'').length < 6){ toast('Enter a name and a full phone number'); return; }
+    contacts.push({name, phone}); store.set('contacts', contacts);
+    $('#cName').value = ''; $('#cPhone').value = ''; $('#addForm').hidden = true;
+    renderContacts(); toast(`${name} added`);
+  });
+
+  /* ---------- light ---------- */
+  let lightOn = false, mode = 'steady', track = null, stream = null, useTorch = null, timer = null, wake = null;
+  const overlay = $('#screenLight');
+  async function initTorch(){
+    if(useTorch !== null) return useTorch;
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if(!caps.torch) throw new Error('no torch');
+      useTorch = true;
+    }catch(e){ if(stream) stream.getTracks().forEach(t=>t.stop()); stream = null; track = null; useTorch = false; }
+    const src = $('#lightSource');
+    src.className = 'pill ' + (useTorch ? 'ok':'warn');
+    src.innerHTML = '<span class="dot"></span>' + (useTorch ? 'Source: flashlight' : 'Source: screen');
+    return useTorch;
+  }
+  function setLamp(on){
+    if(useTorch && track){ track.applyConstraints({advanced:[{torch:on}]}).catch(()=>{}); }
+    else { overlay.hidden = false; overlay.classList.toggle('off', !on); }
+  }
+  const SOS = (()=>{ const u=220, seq=[]; const dot=[[1,u],[0,u]], dash=[[1,u*3],[0,u]];
+    [dot,dot,dot].forEach(x=>seq.push(...x)); seq[seq.length-1]=[0,u*3];
+    [dash,dash,dash].forEach(x=>seq.push(...x)); seq[seq.length-1]=[0,u*3];
+    [dot,dot,dot].forEach(x=>seq.push(...x)); seq[seq.length-1]=[0,u*7]; return seq; })();
+  function runPattern(){
+    clearTimeout(timer);
+    if(!lightOn) return;
+    if(mode === 'steady'){ setLamp(true); return; }
+    let i = 0;
+    const seq = mode === 'strobe' ? [[1,90],[0,160]] : SOS;
+    (function step(){ if(!lightOn) return; const [on,ms] = seq[i % seq.length]; setLamp(!!on); i++; timer = setTimeout(step, ms); })();
+  }
+  async function lightToggle(){
+    const btn = $('#lightBtn');
+    if(!lightOn){
+      await initTorch();
+      lightOn = true; btn.classList.add('on'); btn.setAttribute('aria-pressed','true'); btn.innerHTML = 'On<small>Tap to turn off</small>';
+      try{ wake = await navigator.wakeLock.request('screen'); }catch(e){}
+      runPattern();
+    } else {
+      lightOn = false; clearTimeout(timer); setLamp(false); overlay.hidden = true;
+      btn.classList.remove('on'); btn.setAttribute('aria-pressed','false'); btn.innerHTML = 'Off<small>Tap to turn on</small>';
+      try{ wake && wake.release(); }catch(e){} wake = null;
+    }
+  }
+  $('#lightBtn').addEventListener('click', lightToggle);
+  overlay.addEventListener('click', () => { if(lightOn) lightToggle(); else overlay.hidden = true; });
+  $$('[data-mode]').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode; $$('[data-mode]').forEach(x => x.setAttribute('aria-pressed', x===b ? 'true':'false')); runPattern();
+  }));
+
+  /* ---------- camera ---------- */
+  let downloads = null;
+  if(window.claude && window.claude.use){ window.claude.use('downloads').then(d => { downloads = d; }).catch(()=>{}); }
+  $('#camInput').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    const url = URL.createObjectURL(f);
+    const stamp = { t: new Date(), pos: pos ? {...pos} : null };
+    addShot(url, stamp); e.target.value = '';
+    if(!pos && store.get('locAllowed', false)) locate();
+  });
+  function stampText(s){
+    const t = s.t.toLocaleString([], {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+    return s.pos ? `${t} · ${s.pos.lat.toFixed(5)}, ${s.pos.lon.toFixed(5)}` : `${t} · no GPS`;
+  }
+  function addShot(url, s){
+    $('#galleryEmpty').hidden = true;
+    const card = document.createElement('div'); card.className = 'shot';
+    const img = document.createElement('img'); img.src = url; img.alt = 'Photo taken ' + stampText(s);
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const st = document.createElement('span'); st.textContent = stampText(s);
+    const save = document.createElement('button'); save.className = 'btn small'; save.textContent = 'Save stamped';
+    save.addEventListener('click', () => saveStamped(img, s, save));
+    meta.append(st, save); card.append(img, meta);
+    $('#gallery').prepend(card);
+  }
+  async function saveStamped(img, s, btn){
+    if(!downloads){ toast('Saving isn\'t available here. Press and hold the photo to save it.'); return; }
+    const c = document.createElement('canvas');
+    const w = img.naturalWidth, h = img.naturalHeight; c.width = w; c.height = h;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    const band = Math.max(40, Math.round(h * 0.06));
+    g.fillStyle = 'rgba(0,0,0,.65)'; g.fillRect(0, h-band, w, band);
+    g.fillStyle = '#f4e04d'; g.font = `600 ${Math.round(band*0.42)}px ui-monospace, Menlo, monospace`;
+    g.textBaseline = 'middle'; g.fillText('BEACON  ' + stampText(s), band*0.4, h - band/2);
+    c.toBlob(async blob => {
+      if(!blob){ toast('Could not prepare the photo'); return; }
+      try{ await downloads.save({filename:`beacon-${s.t.toISOString().slice(0,16).replace(/[:T]/g,'-')}.jpg`, data:blob}); toast('Photo saved'); }
+      catch(err){ if(err && err.code === 'declined') return; toast('Saving isn\'t available here. Press and hold the photo to save it.'); }
+    }, 'image/jpeg', 0.9);
+  }
+
+  /* ---------- alarm ---------- */
+  let ac = null, alarmOn = false, sound = 'whistle', alarmTimer = null, nodes = [];
+  function tone(freq, start, dur, type, ramp){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(freq, start);
+    if(ramp) o.frequency.linearRampToValueAtTime(ramp, start + dur);
+    g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(0.9, start + 0.02);
+    g.gain.setValueAtTime(0.9, start + dur - 0.03); g.gain.linearRampToValueAtTime(0, start + dur);
+    o.connect(g).connect(ac.destination); o.start(start); o.stop(start + dur + 0.05); nodes.push(o);
+  }
+  function schedule(){
+    if(!alarmOn) return;
+    const t = ac.currentTime + 0.05; let len;
+    if(sound === 'whistle'){ for(let i=0;i<6;i++) tone(3150, t + i*1.6, 1.0, 'sine'); len = 10; }
+    else if(sound === 'siren'){ for(let i=0;i<4;i++){ tone(650, t+i*1.2, 0.6, 'sawtooth', 1450); tone(1450, t+i*1.2+0.6, 0.6, 'sawtooth', 650); } len = 4.8; }
+    else { for(let i=0;i<3;i++) tone(2600, t + i*0.35, 0.2, 'square'); len = 2.2; }
+    alarmTimer = setTimeout(schedule, len*1000);
+  }
+  $('#alarmBtn').addEventListener('click', () => {
+    const btn = $('#alarmBtn');
+    if(!alarmOn){
+      try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); }catch(e){ toast('Sound isn\'t available here'); return; }
+      alarmOn = true; btn.classList.add('on'); btn.setAttribute('aria-pressed','true'); btn.innerHTML = 'On<small>Tap to stop</small>'; schedule();
+    } else {
+      alarmOn = false; clearTimeout(alarmTimer); nodes.forEach(n => { try{ n.stop(); }catch(e){} }); nodes = [];
+      btn.classList.remove('on'); btn.setAttribute('aria-pressed','false'); btn.innerHTML = 'Off<small>Tap to sound</small>';
+    }
+  });
+  $$('[data-sound]').forEach(b => b.addEventListener('click', () => {
+    sound = b.dataset.sound; $$('[data-sound]').forEach(x => x.setAttribute('aria-pressed', x===b ? 'true':'false'));
+    if(alarmOn){ clearTimeout(alarmTimer); nodes.forEach(n => { try{ n.stop(); }catch(e){} }); nodes = []; schedule(); }
+  }));
+
+  /* ---------- CPR pacer ---------- */
+  let metro = null;
+  $('#metroBtn').addEventListener('click', () => {
+    const b = $('#metroBtn');
+    if(metro){ clearInterval(metro); metro = null; b.setAttribute('aria-pressed','false'); b.textContent = 'Start 110 bpm pacer'; return; }
+    try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); }catch(e){}
+    b.setAttribute('aria-pressed','true'); b.textContent = 'Stop pacer';
+    metro = setInterval(() => {
+      const beat = $('#beat'); beat.classList.add('hit'); setTimeout(()=>beat.classList.remove('hit'), 120);
+      if(ac){ const t = ac.currentTime; const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 1000; g.gain.setValueAtTime(0.5,t); g.gain.exponentialRampToValueAtTime(0.001, t+0.08); o.connect(g).connect(ac.destination); o.start(t); o.stop(t+0.1); }
+    }, 60000/110);
+  });
+
+  /* ---------- delete all data ---------- */
+  $('#wipeBtn').addEventListener('click', () => { $('#wipeConfirm').hidden = false; $('#wipeBtn').hidden = true; $('#wipeYes').focus(); });
+  $('#wipeNo').addEventListener('click', () => { $('#wipeConfirm').hidden = true; $('#wipeBtn').hidden = false; });
+  $('#wipeYes').addEventListener('click', () => {
+    try{ Object.keys(localStorage).filter(k => k.startsWith('beacon.')).forEach(k => localStorage.removeItem(k)); }catch(e){}
+    contacts = []; Object.keys(med).forEach(k => delete med[k]); pos = null;
+    ['mName','mBlood','mAllergy','mMeds','placeNote','cName','cPhone'].forEach(id => { $('#'+id).value = ''; });
+    $$('#gallery img').forEach(i => { try{ URL.revokeObjectURL(i.src); }catch(e){} });
+    $('#gallery').innerHTML = ''; $('#galleryEmpty').hidden = false;
+    $('#coords').textContent = 'Not located yet';
+    $('#coordsSub').textContent = 'Tap below to get a GPS fix. It goes into your message automatically.';
+    $('#gpsPill').className = 'pill'; $('#gpsPill').innerHTML = '<span class="dot"></span>No fix'; $('#locDenied').hidden = true; $('#locAsk').hidden = true;
+    msgEdited = false; buildMsg(true);
+    $('#wipeConfirm').hidden = true; $('#wipeBtn').hidden = false;
+    toast('All your data was deleted from this phone');
+  });
+
+  buildMsg(true);
+})();
+</script>
+</body></html>
