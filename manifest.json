@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Beacon Survival Kit",
+  "short_name": "Beacon",
+  "description": "Emergency SOS messages with your location, flashlight, distress alarm, stamped photos and a first-aid field guide. Works offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1720",
+  "theme_color": "#0f1720",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["health", "medical", "utilities", "travel"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
